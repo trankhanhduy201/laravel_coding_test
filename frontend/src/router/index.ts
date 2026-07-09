@@ -25,6 +25,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/tasks/:id/view',
+    name: 'tasks-view',
+    component: () => import('../views/TaskViewView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/tasks/:id/edit',
     name: 'tasks-edit',
     component: () => import('../views/TaskEditView.vue'),

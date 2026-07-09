@@ -3,26 +3,30 @@ import type { TaskStatus, TaskUser } from '../../api/tasks'
 type TaskStatusSetting = {
   label: string
   color: string
+  key: TaskStatus
 }
-
-const taskStatusOrder: TaskStatus[] = ['todo', 'in_progress', 'done']
 
 export const taskStatusSettings: Record<TaskStatus, TaskStatusSetting> = {
   todo: {
     label: 'To do',
     color: 'grey',
+    key: 'todo'
   },
   in_progress: {
     label: 'In progress',
     color: 'primary',
+    key: 'in_progress'
   },
   done: {
     label: 'Done',
     color: 'success',
+    key: 'done'
   },
 }
 
-export const taskStatusOptions: Array<{ title: string, value: TaskStatus }> = taskStatusOrder.map((status) => ({
+export const validTaskStatuses: TaskStatus[] = Object.values(taskStatusSettings).map(item => item.key) as TaskStatus[]
+
+export const taskStatusOptions: Array<{ title: string, value: TaskStatus }> = validTaskStatuses.map((status) => ({
   title: taskStatusSettings[status].label,
   value: status,
 }))

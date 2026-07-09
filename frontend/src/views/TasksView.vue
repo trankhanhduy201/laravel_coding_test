@@ -5,6 +5,7 @@ import DashboardLayout from '../layouts/DashboardLayout.vue'
 import TaskDeleteButton from '../components/TaskDeleteButton.vue'
 import UserAutocomplete from '../components/UserAutocomplete.vue'
 import { ApiError } from '../api/client'
+import { authState } from '../services/authService'
 import {
   fetchTasks as loadTasks,
   type Task,
@@ -19,6 +20,8 @@ import {
   getTaskStatusColor,
   getTaskStatusLabel,
   taskStatusFilterOptions,
+  taskStatusSettings,
+  validTaskStatuses,
 } from '../features/tasks/taskHelpers'
 
 const tasks = ref<Task[]>([])
@@ -76,7 +79,7 @@ const resolveRow = (item: unknown): Partial<Task> => {
 
 const getRowStatus = (item: unknown): TaskStatus => {
   const status = resolveRow(item).status
-  return status === 'in_progress' || status === 'done' || status === 'todo' ? status : 'todo'
+  return validTaskStatuses.includes(status) ? status : taskStatusSettings.todo.key
 }
 
 const getRowDueDate = (item: unknown): string | null => {
@@ -127,7 +130,66 @@ const goToCreate = async () => {
   await router.push({ name: 'tasks-create' })
 }
 
+const canViewTask = (item: unknown): boolean => {
+  const task = resolveRow(item)
+  const currentUser = authState.user
+
+  if (!currentUser) return false
+
+  // Admin can view all tasks
+  if (currentUser.role === 'admin') return true
+
+  // Author can view their own tasks
+  if (task.author?.id === currentUser.id) return true
+
+  // Assignee can view tasks assigned to them
+  if (task.assignee?.id === currentUser.id) return true
+
+  return false
+}
+
+const canEditTask = (item: unknown): boolean => {
+  const task = resolveRow(item)
+  const currentUser = authState.user
+
+  if (!currentUser) return false
+
+  // Admin can edit all tasks
+  if (currentUser.role === 'admin') return true
+
+  // Author can edit their own tasks
+  if (task.author?.id === currentUser.id) return true
+
+  return false
+}
+
+const canDeleteTask = (item: unknown): boolean => {
+  const task = resolveRow(item)
+  const currentUser = authState.user
+
+  if (!currentUser) return false
+
+  // Admin can delete all tasks
+  if (currentUser.role === 'admin') return true
+
+  // Author can delete their own tasks
+  if (task.author?.id === currentUser.id) return true
+
+  return false
+}
+
+const goToView = async (item: unknown) => {
+  if (!canViewTask(item)) return
+
+  const row = resolveRow(item)
+  if (!row.id) return
+
+  await router.push({ name: 'tasks-view', params: { id: row.id } })
+}
+
 const goToEdit = async (item: unknown) => {
+  if (!canEditTask(item)) return
+
   const row = resolveRow(item)
   if (!row.id) return
 
@@ -243,6 +305,7 @@ onMounted(() => {
         <v-data-table
           :headers="headers"
           :items="normalizedTasks"
+          :items-per-page="-1"
           :loading="loading"
           loading-text="Loading tasks..."
           item-value="id"
@@ -269,8 +332,26 @@ onMounted(() => {
 
           <template #item.actions="{ item }">
             <div class="d-flex ga-2">
-              <v-btn size="small" variant="text" color="primary" icon="mdi-pencil" :title="`Edit ${getRowTitle(item)}`" @click="goToEdit(item)" />
+              <v-btn
+                v-if="canViewTask(item) && !canEditTask(item) && !canDeleteTask(item)"
+                size="small"
+                variant="text"
+                color="info"
+                icon="mdi-eye"
+                :title="`View ${getRowTitle(item)}`"
+                @click="goToView(item)"
+              />
+              <v-btn
+                v-if="canEditTask(item)"
+                size="small"
+                variant="text"
+                color="primary"
+                icon="mdi-pencil"
+                :title="`Edit ${getRowTitle(item)}`"
+                @click="goToEdit(item)"
+              />
               <TaskDeleteButton
+                v-if="canDeleteTask(item)"
                 :task-id="Number(resolveRow(item).id || 0)"
                 :task-title="getRowTitle(item)"
                 icon-only
