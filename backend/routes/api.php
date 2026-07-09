@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\V1\TaskController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('api')->group(function () {
@@ -10,7 +11,7 @@ Route::prefix('api')->group(function () {
 	// versioned API groups
 	Route::middleware('auth:sanctum')->group(function () {
 		Route::prefix('v1')->group(function () {
-			// add v1 endpoints here
+			Route::apiResource('tasks', TaskController::class);
 		});
 	});
 });
