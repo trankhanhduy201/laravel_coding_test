@@ -8,6 +8,7 @@ use App\Http\Requests\Api\Tasks\UpdateTaskRequest;
 use App\Http\Resources\TaskCollection;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
+use App\Repositories\TaskRepository;
 use App\Services\TaskService;
 use App\Support\ApiResponse;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -19,8 +20,10 @@ class TaskController extends ApiController
 {
     use AuthorizesRequests;
 
-    public function __construct(private TaskService $taskService)
-    {
+    public function __construct(
+        private TaskService $taskService,
+        private TaskRepository $taskRepository
+    ) {
         $this->authorizeResource(Task::class, 'task');
     }
 
@@ -37,7 +40,7 @@ class TaskController extends ApiController
 
     public function store(StoreTaskRequest $request): JsonResponse
     {
-        $task = $this->taskService->createTask($request->validated());
+        $task = $this->taskRepository->create($request->validated());
 
         return ApiResponse::success(
             'Task created successfully',
@@ -57,18 +60,18 @@ class TaskController extends ApiController
 
     public function update(UpdateTaskRequest $request, Task $task): JsonResponse
     {
-        $updatedTask = $this->taskService->updateTask($task->id, $request->validated());
+        $task->update($request->validated());
 
         return ApiResponse::success(
             'Task updated successfully',
-            new TaskResource($updatedTask),
+            new TaskResource($task->fresh()),
             Response::HTTP_OK
         );
     }
 
     public function destroy(Task $task): JsonResponse
     {
-        $this->taskService->deleteTask($task->id);
+        $task->delete();
 
         return ApiResponse::success(
             'Task deleted successfully'
