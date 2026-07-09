@@ -1,8 +1,8 @@
 version: "3.7"
 
 services:
-  web:
-    container_name: "web"
+  api:
+    container_name: "api"
     build:
       context: .
       target: "local"
@@ -17,6 +17,19 @@ services:
     links:
       - db
       - redis
+  web:
+    container_name: "web"
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
   db:
     image: mysql:8.0
     container_name: "db"
@@ -36,4 +49,6 @@ services:
       - "18379:6379"
 volumes:
   redis-data:
+    driver: local
+  frontend-node-modules:
     driver: local
