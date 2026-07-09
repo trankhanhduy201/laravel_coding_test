@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\ApiController;
 use App\Http\Requests\Api\Tasks\StoreTaskRequest;
 use App\Http\Requests\Api\Tasks\UpdateTaskRequest;
 use App\Http\Resources\TaskCollection;
@@ -10,13 +10,19 @@ use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use App\Services\TaskService;
 use App\Support\ApiResponse;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class TaskController extends Controller
+class TaskController extends ApiController
 {
-    public function __construct(private TaskService $taskService) {}
+    use AuthorizesRequests;
+
+    public function __construct(private TaskService $taskService)
+    {
+        $this->authorizeResource(Task::class, 'task');
+    }
 
     public function index(Request $request): JsonResponse
     {
