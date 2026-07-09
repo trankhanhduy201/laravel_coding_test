@@ -33,12 +33,6 @@ const handleLogout = async () => {
 
     <v-list nav density="comfortable">
       <v-list-item
-        title="Login"
-        subtitle="Authentication entry"
-        prepend-icon="mdi-login"
-        to="/login"
-      />
-      <v-list-item
         title="Tasks"
         subtitle="Task overview"
         prepend-icon="mdi-format-list-checks"
