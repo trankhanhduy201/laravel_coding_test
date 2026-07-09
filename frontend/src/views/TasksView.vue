@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
+import TaskDeleteButton from '../components/TaskDeleteButton.vue'
 import UserAutocomplete from '../components/UserAutocomplete.vue'
 import { ApiError } from '../api/client'
 import {
@@ -131,6 +132,10 @@ const goToEdit = async (item: unknown) => {
   if (!row.id) return
 
   await router.push({ name: 'tasks-edit', params: { id: row.id } })
+}
+
+const handleTaskDeleted = async () => {
+  await fetchTasks()
 }
 
 const totalPages = computed(() => Math.max(1, meta.value.last_page))
@@ -265,7 +270,14 @@ onMounted(() => {
           <template #item.actions="{ item }">
             <div class="d-flex ga-2">
               <v-btn size="small" variant="text" color="primary" icon="mdi-pencil" :title="`Edit ${getRowTitle(item)}`" @click="goToEdit(item)" />
-              <v-btn size="small" variant="text" color="error" icon="mdi-delete" :title="`Delete ${getRowTitle(item)}`" />
+              <TaskDeleteButton
+                :task-id="Number(resolveRow(item).id || 0)"
+                :task-title="getRowTitle(item)"
+                icon-only
+                button-size="small"
+                button-variant="text"
+                @deleted="handleTaskDeleted"
+              />
             </div>
           </template>
 

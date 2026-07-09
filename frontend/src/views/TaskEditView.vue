@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
+import TaskDeleteButton from '../components/TaskDeleteButton.vue'
 import UserAutocomplete from '../components/UserAutocomplete.vue'
 import { ApiError } from '../api/client'
 import { fetchTask, updateTask, type TaskPayload, type TaskStatus, type TaskUser } from '../services/taskService'
@@ -88,6 +89,10 @@ const goBack = async () => {
   await router.push({ name: 'tasks' })
 }
 
+const handleTaskDeleted = async () => {
+  await router.push({ name: 'tasks' })
+}
+
 onMounted(() => {
   void loadTask()
 })
@@ -157,9 +162,20 @@ onMounted(() => {
           </v-col>
         </v-row>
 
-        <div class="d-flex justify-end ga-2">
-          <v-btn variant="text" :disabled="loading || loadingTask" @click="goBack">Cancel</v-btn>
-          <v-btn color="primary" :loading="loading" :disabled="loadingTask" @click="submit">Save changes</v-btn>
+        <div class="d-flex justify-space-between align-center ga-2">
+          <TaskDeleteButton
+            :task-id="taskId"
+            :task-title="form.title"
+            button-text="Delete task"
+            button-variant="tonal"
+            :button-size="'default'"
+            @deleted="handleTaskDeleted"
+          />
+
+          <div class="d-flex justify-end ga-2">
+            <v-btn variant="text" :disabled="loading || loadingTask" @click="goBack">Cancel</v-btn>
+            <v-btn color="primary" :loading="loading" :disabled="loadingTask" @click="submit">Save changes</v-btn>
+          </div>
         </div>
       </v-card-text>
     </v-card>
