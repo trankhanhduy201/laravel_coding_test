@@ -32,9 +32,13 @@ const router = useRouter()
 
 const selectedStatus = ref<'all' | TaskStatus>('all')
 const assignedToFilter = ref<TaskUser | null>(null)
-const titleFilter = ref('')
+const titleFilter = ref<string | null>('')
 const debouncedTitleFilter = ref('')
 let titleFilterDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+const normalizeTitleFilter = (value: string | null | undefined): string => {
+  return typeof value === 'string' ? value.trim() : ''
+}
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -211,8 +215,15 @@ watch(titleFilter, (value) => {
     clearTimeout(titleFilterDebounceTimer)
   }
 
+  const normalizedValue = normalizeTitleFilter(value)
+
+  if (normalizedValue === '') {
+    debouncedTitleFilter.value = ''
+    return
+  }
+
   titleFilterDebounceTimer = setTimeout(() => {
-    debouncedTitleFilter.value = value.trim()
+    debouncedTitleFilter.value = normalizedValue
   }, 350)
 })
 
