@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
+import UserAutocomplete from '../components/UserAutocomplete.vue'
 import { ApiError } from '../api/client'
 import {
   fetchTasks as loadTasks,
@@ -9,6 +10,7 @@ import {
   type TaskListFilters,
   type TaskListMeta,
   type TaskStatus,
+  type TaskUser,
 } from '../services/taskService'
 import {
   formatTaskDate,
@@ -24,7 +26,7 @@ const errorMessage = ref('')
 const router = useRouter()
 
 const selectedStatus = ref<'all' | TaskStatus>('all')
-const assignedToFilter = ref<string>('')
+const assignedToFilter = ref<TaskUser | null>(null)
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -147,25 +149,11 @@ const fetchTasks = async () => {
   errorMessage.value = ''
 
   try {
-    const assignedTo = assignedToFilter.value.trim()
     const filters: TaskListFilters = {
       page: page.value,
       limit: itemsPerPage.value,
       status: selectedStatus.value === 'all' ? undefined : selectedStatus.value,
-      assigned_to: assignedTo ? Number(assignedTo) : undefined,
-    }
-
-    if (assignedTo && Number.isNaN(filters.assigned_to)) {
-      errorMessage.value = 'Assigned to must be a valid user ID.'
-      tasks.value = []
-      meta.value = {
-        current_page: 1,
-        per_page: itemsPerPage.value,
-        total: 0,
-        last_page: 1,
-      }
-      loading.value = false
-      return
+      assigned_to: assignedToFilter.value?.id,
     }
 
     const response = await loadTasks(filters)
@@ -218,14 +206,9 @@ onMounted(() => {
       <v-card-text>
         <v-row class="mb-2">
           <v-col cols="12" md="7">
-            <v-text-field
+            <UserAutocomplete
               v-model="assignedToFilter"
-              label="Filter by assignee ID"
-              type="number"
-              variant="outlined"
-              density="comfortable"
-              prepend-inner-icon="mdi-account-outline"
-              hide-details
+              label="Filter by assignee"
               clearable
             />
           </v-col>

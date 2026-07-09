@@ -2,26 +2,26 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
+import UserAutocomplete from '../components/UserAutocomplete.vue'
 import { ApiError } from '../api/client'
-import { createTask, type TaskPayload, type TaskStatus } from '../services/taskService'
+import { createTask, type TaskPayload, type TaskStatus, type TaskUser } from '../services/taskService'
 import { taskStatusOptions, toApiDateTime } from '../features/tasks/taskHelpers'
 
 const router = useRouter()
 const loading = ref(false)
 const errorMessage = ref('')
+const selectedAssignee = ref<TaskUser | null>(null)
 
 const form = reactive({
   title: '',
   description: '',
   status: 'todo' as TaskStatus,
-  assigned_to: '',
   due_date: '',
 })
 
 const validate = (): string | null => {
   if (!form.title.trim()) return 'Title is required.'
-  if (!form.assigned_to.trim()) return 'Assignee ID is required.'
-  if (Number.isNaN(Number(form.assigned_to))) return 'Assignee ID must be numeric.'
+  if (!selectedAssignee.value?.id) return 'Assignee is required.'
   if (form.due_date && !toApiDateTime(form.due_date)) return 'Due date is invalid.'
 
   return null
@@ -43,7 +43,7 @@ const submit = async () => {
       title: form.title.trim(),
       description: form.description.trim() || null,
       status: form.status,
-      assigned_to: Number(form.assigned_to),
+      assigned_to: selectedAssignee.value?.id,
       due_date: toApiDateTime(form.due_date),
     }
 
@@ -109,11 +109,9 @@ const goBack = async () => {
           </v-col>
 
           <v-col cols="12" md="4">
-            <v-text-field
-              v-model="form.assigned_to"
-              label="Assignee ID"
-              type="number"
-              variant="outlined"
+            <UserAutocomplete
+              v-model="selectedAssignee"
+              label="Assignee"
               :disabled="loading"
             />
           </v-col>

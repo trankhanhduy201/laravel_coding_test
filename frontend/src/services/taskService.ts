@@ -4,6 +4,7 @@ import {
   deleteTask as deleteTaskApi,
   getTask as getTaskApi,
   listTasks as listTasksApi,
+  type TaskUser,
   type TaskListFilters,
   type TaskListMeta,
   type TaskListResponse,
@@ -13,7 +14,7 @@ import {
   type TaskStatus,
 } from '../api/tasks'
 
-export type { Task, TaskListFilters, TaskListMeta, TaskListResponse, TaskPayload, TaskStatus }
+export type { Task, TaskUser, TaskListFilters, TaskListMeta, TaskListResponse, TaskPayload, TaskStatus }
 
 export function fetchTasks(filters: TaskListFilters = {}): Promise<TaskListResponse> {
   return listTasksApi(getAccessToken(), filters)
