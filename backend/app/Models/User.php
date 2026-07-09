@@ -55,7 +55,7 @@ class User extends Authenticatable
      */
     public function tasks(): HasMany
     {
-        return $this->hasMany(Task::class, 'assigned_to');
+        return $this->hasMany(Task::class, 'assigned_to')->withoutTrashed();
     }
 
     /**
@@ -63,6 +63,6 @@ class User extends Authenticatable
      */
     public function authoredTasks(): HasMany
     {
-        return $this->hasMany(Task::class, 'user_id');
+        return $this->hasMany(Task::class, 'user_id')->withoutTrashed();
     }
 }
