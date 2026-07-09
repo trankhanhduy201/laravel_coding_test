@@ -67,6 +67,6 @@ class DatabaseSeeder extends Seeder
 
         Task::query()->forceDelete();
 
-        Task::factory(25)->create();
+        Task::factory(30)->create();
     }
 }
