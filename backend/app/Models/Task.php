@@ -23,6 +23,7 @@ class Task extends Model
         'status',
         'assigned_to',
         'due_date',
+        'user_id',
     ];
 
     /**
@@ -38,6 +39,14 @@ class Task extends Model
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the user that created the task.
+     */
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**

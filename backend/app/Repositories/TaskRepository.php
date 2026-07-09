@@ -21,6 +21,10 @@ class TaskRepository extends AbstractRepository
             $query = $query->where('assigned_to', $filters['assigned_to']);
         }
 
+        if (isset($filters['user_id'])) {
+            $query = $query->where('user_id', $filters['user_id']);
+        }
+
         return $query->get();
     }
 

@@ -65,9 +65,7 @@ class TaskController extends Controller
         $this->taskService->deleteTask($task->id);
 
         return ApiResponse::success(
-            'Task deleted successfully',
-            [],
-            Response::HTTP_OK
+            'Task deleted successfully'
         );
     }
 }

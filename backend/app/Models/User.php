@@ -57,4 +57,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Task::class, 'assigned_to');
     }
+
+    /**
+     * Get the tasks created by the user.
+     */
+    public function authoredTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'user_id');
+    }
 }
