@@ -4,15 +4,18 @@ import {
   deleteTask as deleteTaskApi,
   getTask as getTaskApi,
   listTasks as listTasksApi,
+  type TaskListFilters,
+  type TaskListMeta,
+  type TaskListResponse,
   updateTask as updateTaskApi,
   type Task,
   type TaskPayload,
   type TaskStatus,
 } from '../api/tasks'
 
-export type { Task, TaskPayload, TaskStatus }
+export type { Task, TaskListFilters, TaskListMeta, TaskListResponse, TaskPayload, TaskStatus }
 
-export function fetchTasks(filters: Record<string, string | number | undefined> = {}) {
+export function fetchTasks(filters: TaskListFilters = {}): Promise<TaskListResponse> {
   return listTasksApi(getAccessToken(), filters)
 }
 

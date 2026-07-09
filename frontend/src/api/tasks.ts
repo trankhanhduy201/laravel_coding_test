@@ -1,14 +1,19 @@
-import { request } from './client'
+import { request, requestEnvelope } from './client'
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done'
+
+export type TaskUser = {
+  id: number
+  name: string | null
+}
 
 export type Task = {
   id: number
   title: string
   description: string | null
   status: TaskStatus
-  assigned_to: number | null
-  user_id: number | null
+  author: TaskUser | null
+  assignee: TaskUser | null
   due_date: string | null
   created_at?: string
   updated_at?: string
@@ -16,6 +21,14 @@ export type Task = {
 
 export type TaskListResponse = {
   data: Task[]
+  meta: TaskListMeta
+}
+
+export type TaskListMeta = {
+  current_page: number
+  per_page: number
+  total: number
+  last_page: number
 }
 
 export type TaskPayload = {
@@ -27,39 +40,31 @@ export type TaskPayload = {
   user_id?: number | null
 }
 
-const normalizeTaskList = (payload: unknown): Task[] => {
-  if (!payload || typeof payload !== 'object') {
-    return []
-  }
-
-  const root = payload as { data?: unknown }
-
-  if (Array.isArray(root.data)) {
-    return root.data as Task[]
-  }
-
-  if (root.data && typeof root.data === 'object') {
-    const nested = root.data as { data?: unknown }
-
-    if (Array.isArray(nested.data)) {
-      return nested.data as Task[]
-    }
-  }
-
-  return []
+export type TaskListFilters = {
+  page?: number
+  limit?: number
+  status?: TaskStatus
+  assigned_to?: number
 }
 
-export async function listTasks(authToken: string, filters: Record<string, string | number | undefined> = {}) {
+const defaultTaskListMeta: TaskListMeta = {
+  current_page: 1,
+  per_page: 15,
+  total: 0,
+  last_page: 1,
+}
+
+export async function listTasks(authToken: string, filters: TaskListFilters = {}) {
   const query = new URLSearchParams()
 
   Object.entries(filters).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null) {
       query.set(key, String(value))
     }
   })
 
   const suffix = query.toString() ? `?${query.toString()}` : ''
-  const payload = await request<TaskListResponse | { data: TaskListResponse } | { data: Task[] }>(
+  const envelope = await requestEnvelope<Task[]>(
     `/v1/tasks${suffix}`,
     {
       method: 'GET',
@@ -67,7 +72,17 @@ export async function listTasks(authToken: string, filters: Record<string, strin
     },
   )
 
-  return normalizeTaskList(payload)
+  const meta = envelope.meta as Partial<TaskListMeta> | undefined
+
+  return {
+    data: Array.isArray(envelope.data) ? envelope.data : [],
+    meta: {
+      current_page: meta?.current_page ?? defaultTaskListMeta.current_page,
+      per_page: meta?.per_page ?? defaultTaskListMeta.per_page,
+      total: meta?.total ?? defaultTaskListMeta.total,
+      last_page: meta?.last_page ?? defaultTaskListMeta.last_page,
+    },
+  }
 }
 
 export async function getTask(authToken: string, id: number) {

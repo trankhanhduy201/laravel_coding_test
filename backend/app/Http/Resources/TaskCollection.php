@@ -11,8 +11,20 @@ class TaskCollection extends ResourceCollection
 
     public function toArray(Request $request): array
     {
+        $meta = [];
+
+        if (method_exists($this->resource, 'currentPage')) {
+            $meta = [
+                'current_page' => $this->resource->currentPage(),
+                'per_page' => $this->resource->perPage(),
+                'total' => $this->resource->total(),
+                'last_page' => $this->resource->lastPage(),
+            ];
+        }
+
         return [
-            'data' => $this->collection,
+            'data' => TaskResource::collection($this->collection),
+            'meta' => $meta,
         ];
     }
 }

@@ -11,15 +11,12 @@ use App\Models\Task;
 use App\Repositories\TaskRepository;
 use App\Services\TaskService;
 use App\Support\ApiResponse;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class TaskController extends ApiController
 {
-    use AuthorizesRequests;
-
     public function __construct(
         private TaskService $taskService,
         private TaskRepository $taskRepository
@@ -41,6 +38,7 @@ class TaskController extends ApiController
     public function store(StoreTaskRequest $request): JsonResponse
     {
         $task = $this->taskRepository->create($request->validated());
+        $task->loadMissing(['author:id,name', 'assignee:id,name']);
 
         return ApiResponse::success(
             'Task created successfully',
@@ -51,6 +49,8 @@ class TaskController extends ApiController
 
     public function show(Task $task): JsonResponse
     {
+        $task->loadMissing(['author:id,name', 'assignee:id,name']);
+
         return ApiResponse::success(
             'Task retrieved successfully',
             new TaskResource($task),
@@ -61,10 +61,11 @@ class TaskController extends ApiController
     public function update(UpdateTaskRequest $request, Task $task): JsonResponse
     {
         $task->update($request->validated());
+        $task = $task->fresh()->loadMissing(['author:id,name', 'assignee:id,name']);
 
         return ApiResponse::success(
             'Task updated successfully',
-            new TaskResource($task->fresh()),
+            new TaskResource($task),
             Response::HTTP_OK
         );
     }

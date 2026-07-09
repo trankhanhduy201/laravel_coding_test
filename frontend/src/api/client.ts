@@ -2,6 +2,7 @@ export type ApiEnvelope<T> = {
   success: boolean
   message: string
   data: T
+  meta?: Record<string, unknown>
   errors?: Record<string, string[]>
 }
 
@@ -41,6 +42,14 @@ export async function request<T>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
+  const envelope = await requestEnvelope<T>(path, options)
+  return envelope.data
+}
+
+export async function requestEnvelope<T>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<ApiEnvelope<T>> {
   const { authToken, body: requestBody, ...initOptions } = options
   const headers = new Headers(options.headers)
   headers.set('Accept', 'application/json')
@@ -77,6 +86,6 @@ export async function request<T>(
     const errorMessage = payload?.message || response.statusText || 'Request failed'
     throw new ApiError(errorMessage, response.status, payload?.errors, payload)
   }
-  
-  return (payload?.data ?? null) as T
+
+  return (payload ?? { success: true, message: '', data: null as T }) as ApiEnvelope<T>
 }

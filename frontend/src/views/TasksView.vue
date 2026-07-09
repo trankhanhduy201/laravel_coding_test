@@ -2,17 +2,30 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 import { ApiError } from '../api/client'
-import { fetchTasks as loadTasks, type Task, type TaskStatus } from '../services/taskService'
+import {
+  fetchTasks as loadTasks,
+  type Task,
+  type TaskListFilters,
+  type TaskListMeta,
+  type TaskStatus,
+} from '../services/taskService'
 
-const allTasks = ref<Task[]>([])
+const tasks = ref<Task[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
 
-const search = ref('')
 const selectedStatus = ref<'all' | TaskStatus>('all')
+const assignedToFilter = ref<string>('')
 
 const page = ref(1)
 const itemsPerPage = ref(10)
+
+const meta = ref<TaskListMeta>({
+  current_page: 1,
+  per_page: 10,
+  total: 0,
+  last_page: 1,
+})
 
 const statusOptions = [
   { title: 'All', value: 'all' },
@@ -23,6 +36,7 @@ const statusOptions = [
 
 const headers = [
   { title: 'Title', key: 'title' },
+  { title: 'Author', key: 'author' },
   { title: 'Assignee', key: 'assignee' },
   { title: 'Status', key: 'status' },
   { title: 'Due date', key: 'due_date' },
@@ -41,9 +55,10 @@ const getStatusColor = (status: TaskStatus) => {
   return 'grey'
 }
 
-const formatAssignee = (assignedTo: number | null) => {
-  if (!assignedTo) return 'Unassigned'
-  return `User #${assignedTo}`
+const formatAssignee = (assignee: Task['assignee']) => {
+  if (!assignee) return 'Unassigned'
+  if (assignee.name && assignee.name.trim()) return assignee.name
+  return `User #${assignee.id}`
 }
 
 const formatDate = (value: string | null) => {
@@ -53,37 +68,74 @@ const formatDate = (value: string | null) => {
   return date.toLocaleDateString()
 }
 
-const normalizedTasks = computed(() => allTasks.value.map((task) => ({
+const normalizedTasks = computed(() => tasks.value.map((task) => ({
   ...task,
-  assignee: formatAssignee(task.assigned_to),
+  author_display: task.author?.name || (task.author ? `User #${task.author.id}` : 'Unknown'),
+  assignee_display: formatAssignee(task.assignee),
 })))
 
-const filteredTasks = computed(() => {
-  const keyword = search.value.trim().toLowerCase()
-
-  return normalizedTasks.value.filter((task) => {
-    const matchesStatus = selectedStatus.value === 'all' || task.status === selectedStatus.value
-    const matchesSearch = task.title.toLowerCase().includes(keyword)
-    return matchesStatus && matchesSearch
-  })
-})
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredTasks.value.length / itemsPerPage.value)))
-
-const paginatedTasks = computed(() => {
-  const start = (page.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return filteredTasks.value.slice(start, end)
-})
-
-watch([search, selectedStatus, itemsPerPage], () => {
-  page.value = 1
-})
-
-watch(totalPages, (newTotal) => {
-  if (page.value > newTotal) {
-    page.value = newTotal
+const resolveRow = (item: unknown): Partial<Task> => {
+  if (!item || typeof item !== 'object') {
+    return {}
   }
+
+  const maybeWithRaw = item as { raw?: unknown }
+
+  if (maybeWithRaw.raw && typeof maybeWithRaw.raw === 'object') {
+    return maybeWithRaw.raw as Partial<Task>
+  }
+
+  return item as Partial<Task>
+}
+
+const getRowStatus = (item: unknown): TaskStatus => {
+  const status = resolveRow(item).status
+  return status === 'in_progress' || status === 'done' || status === 'todo' ? status : 'todo'
+}
+
+const getRowDueDate = (item: unknown): string | null => {
+  const dueDate = resolveRow(item).due_date
+  return typeof dueDate === 'string' || dueDate === null ? dueDate : null
+}
+
+const getRowTitle = (item: unknown): string => {
+  const title = resolveRow(item).title
+  return typeof title === 'string' ? title : 'task'
+}
+
+const getRowAuthor = (item: unknown): string => {
+  const author = resolveRow(item).author
+
+  if (author && typeof author === 'object') {
+    const a = author as { id?: unknown, name?: unknown }
+    if (typeof a.name === 'string' && a.name.trim()) return a.name
+    if (typeof a.id === 'number') return `User #${a.id}`
+  }
+
+  return 'Unknown'
+}
+
+const getRowAssignee = (item: unknown): string => {
+  const assignee = resolveRow(item).assignee
+
+  if (assignee && typeof assignee === 'object') {
+    const a = assignee as { id?: unknown, name?: unknown }
+    if (typeof a.name === 'string' && a.name.trim()) return a.name
+    if (typeof a.id === 'number') return `User #${a.id}`
+  }
+
+  return 'Unassigned'
+}
+
+const totalPages = computed(() => Math.max(1, meta.value.last_page))
+
+watch([selectedStatus, assignedToFilter, itemsPerPage], () => {
+  page.value = 1
+  void fetchTasks()
+})
+
+watch(page, () => {
+  void fetchTasks()
 })
 
 const fetchTasks = async () => {
@@ -91,7 +143,33 @@ const fetchTasks = async () => {
   errorMessage.value = ''
 
   try {
-    allTasks.value = await loadTasks()
+    const assignedTo = assignedToFilter.value.trim()
+    const filters: TaskListFilters = {
+      page: page.value,
+      limit: itemsPerPage.value,
+      status: selectedStatus.value === 'all' ? undefined : selectedStatus.value,
+      assigned_to: assignedTo ? Number(assignedTo) : undefined,
+    }
+
+    if (assignedTo && Number.isNaN(filters.assigned_to)) {
+      errorMessage.value = 'Assigned to must be a valid user ID.'
+      tasks.value = []
+      meta.value = {
+        current_page: 1,
+        per_page: itemsPerPage.value,
+        total: 0,
+        last_page: 1,
+      }
+      loading.value = false
+      return
+    }
+
+    const response = await loadTasks(filters)
+
+    tasks.value = response.data
+    meta.value = response.meta
+    page.value = response.meta.current_page
+    itemsPerPage.value = response.meta.per_page
   }
   catch (error: unknown) {
     if (error instanceof ApiError && error.status === 401) {
@@ -100,7 +178,13 @@ const fetchTasks = async () => {
     else {
       errorMessage.value = error instanceof Error ? error.message : 'Unexpected error while fetching tasks'
     }
-    allTasks.value = []
+    tasks.value = []
+    meta.value = {
+      current_page: 1,
+      per_page: itemsPerPage.value,
+      total: 0,
+      last_page: 1,
+    }
   }
   finally {
     loading.value = false
@@ -126,11 +210,12 @@ onMounted(() => {
         <v-row class="mb-2">
           <v-col cols="12" md="7">
             <v-text-field
-              v-model="search"
-              label="Search by title"
+              v-model="assignedToFilter"
+              label="Filter by assignee ID"
+              type="number"
               variant="outlined"
               density="comfortable"
-              prepend-inner-icon="mdi-magnify"
+              prepend-inner-icon="mdi-account-outline"
               hide-details
               clearable
             />
@@ -160,27 +245,35 @@ onMounted(() => {
 
         <v-data-table
           :headers="headers"
-          :items="paginatedTasks"
+          :items="normalizedTasks"
           :loading="loading"
           loading-text="Loading tasks..."
           item-value="id"
           class="elevation-0"
           hide-default-footer
         >
+          <template #item.author="{ item }">
+            {{ getRowAuthor(item) }}
+          </template>
+
+          <template #item.assignee="{ item }">
+            {{ getRowAssignee(item) }}
+          </template>
+
           <template #item.status="{ item }">
-            <v-chip size="small" :color="getStatusColor(item.raw.status)" variant="tonal">
-              {{ getStatusLabel(item.raw.status) }}
+            <v-chip size="small" :color="getStatusColor(getRowStatus(item))" variant="tonal">
+              {{ getStatusLabel(getRowStatus(item)) }}
             </v-chip>
           </template>
 
           <template #item.due_date="{ item }">
-            {{ formatDate(item.raw.due_date) }}
+            {{ formatDate(getRowDueDate(item)) }}
           </template>
 
           <template #item.actions="{ item }">
             <div class="d-flex ga-2">
-              <v-btn size="small" variant="text" color="primary" icon="mdi-pencil" :title="`Edit ${item.raw.title}`" />
-              <v-btn size="small" variant="text" color="error" icon="mdi-delete" :title="`Delete ${item.raw.title}`" />
+              <v-btn size="small" variant="text" color="primary" icon="mdi-pencil" :title="`Edit ${getRowTitle(item)}`" />
+              <v-btn size="small" variant="text" color="error" icon="mdi-delete" :title="`Delete ${getRowTitle(item)}`" />
             </div>
           </template>
 
@@ -197,7 +290,7 @@ onMounted(() => {
               />
 
               <div class="text-body-2 text-medium-emphasis">
-                Showing {{ paginatedTasks.length }} of {{ filteredTasks.length }}
+                Showing {{ normalizedTasks.length }} of {{ meta.total }}
               </div>
 
               <v-pagination

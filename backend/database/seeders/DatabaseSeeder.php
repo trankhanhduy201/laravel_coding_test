@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Enums\UserRoleEnum;
+use App\Models\Task;
 use App\Models\User;
 use Database\Factories\UserFactory;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -27,14 +27,46 @@ class DatabaseSeeder extends Seeder
         );
 
         User::query()->updateOrCreate(
-            ['email' => 'user@example.com'],
+            ['email' => 'manager@example.com'],
             array_merge(
                 User::factory()->normalUser()->make()->getAttributes(),
                 [
+                    'name' => 'Manager',
+                    'email' => 'manager@example.com',
                     'email_verified_at' => now(),
                     'password' => UserFactory::DEMO_PASSWORD,
                 ]
             )
         );
+
+        User::query()->updateOrCreate(
+            ['email' => 'developer@example.com'],
+            array_merge(
+                User::factory()->normalUser()->make()->getAttributes(),
+                [   
+                    'name' => 'Developer',
+                    'email' => 'developer@example.com',
+                    'email_verified_at' => now(),
+                    'password' => UserFactory::DEMO_PASSWORD,
+                ]
+            )
+        );
+
+        User::query()->updateOrCreate(
+            ['email' => 'tester@example.com'],
+            array_merge(
+                User::factory()->normalUser()->make()->getAttributes(),
+                [
+                    'name' => 'Tester',
+                    'email' => 'tester@example.com',
+                    'email_verified_at' => now(),
+                    'password' => UserFactory::DEMO_PASSWORD,
+                ]
+            )
+        );
+
+        Task::query()->forceDelete();
+
+        Task::factory(25)->create();
     }
 }
