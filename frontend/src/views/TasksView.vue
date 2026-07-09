@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 import { ApiError } from '../api/client'
 import {
@@ -9,10 +10,18 @@ import {
   type TaskListMeta,
   type TaskStatus,
 } from '../services/taskService'
+import {
+  formatTaskDate,
+  formatTaskUser,
+  getTaskStatusColor,
+  getTaskStatusLabel,
+  taskStatusFilterOptions,
+} from '../features/tasks/taskHelpers'
 
 const tasks = ref<Task[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
+const router = useRouter()
 
 const selectedStatus = ref<'all' | TaskStatus>('all')
 const assignedToFilter = ref<string>('')
@@ -27,12 +36,7 @@ const meta = ref<TaskListMeta>({
   last_page: 1,
 })
 
-const statusOptions = [
-  { title: 'All', value: 'all' },
-  { title: 'To do', value: 'todo' },
-  { title: 'In progress', value: 'in_progress' },
-  { title: 'Done', value: 'done' },
-]
+const statusOptions = taskStatusFilterOptions
 
 const headers = [
   { title: 'Title', key: 'title' },
@@ -43,29 +47,8 @@ const headers = [
   { title: 'Actions', key: 'actions', sortable: false },
 ]
 
-const getStatusLabel = (status: TaskStatus) => {
-  if (status === 'in_progress') return 'In progress'
-  if (status === 'done') return 'Done'
-  return 'To do'
-}
-
-const getStatusColor = (status: TaskStatus) => {
-  if (status === 'in_progress') return 'primary'
-  if (status === 'done') return 'success'
-  return 'grey'
-}
-
 const formatAssignee = (assignee: Task['assignee']) => {
-  if (!assignee) return 'Unassigned'
-  if (assignee.name && assignee.name.trim()) return assignee.name
-  return `User #${assignee.id}`
-}
-
-const formatDate = (value: string | null) => {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  return date.toLocaleDateString()
+  return formatTaskUser(assignee, 'Unassigned')
 }
 
 const normalizedTasks = computed(() => tasks.value.map((task) => ({
@@ -108,8 +91,13 @@ const getRowAuthor = (item: unknown): string => {
 
   if (author && typeof author === 'object') {
     const a = author as { id?: unknown, name?: unknown }
-    if (typeof a.name === 'string' && a.name.trim()) return a.name
-    if (typeof a.id === 'number') return `User #${a.id}`
+    return formatTaskUser(
+      {
+        id: typeof a.id === 'number' ? a.id : 0,
+        name: typeof a.name === 'string' ? a.name : null,
+      },
+      'Unknown',
+    )
   }
 
   return 'Unknown'
@@ -120,11 +108,27 @@ const getRowAssignee = (item: unknown): string => {
 
   if (assignee && typeof assignee === 'object') {
     const a = assignee as { id?: unknown, name?: unknown }
-    if (typeof a.name === 'string' && a.name.trim()) return a.name
-    if (typeof a.id === 'number') return `User #${a.id}`
+    return formatTaskUser(
+      {
+        id: typeof a.id === 'number' ? a.id : 0,
+        name: typeof a.name === 'string' ? a.name : null,
+      },
+      'Unassigned',
+    )
   }
 
   return 'Unassigned'
+}
+
+const goToCreate = async () => {
+  await router.push({ name: 'tasks-create' })
+}
+
+const goToEdit = async (item: unknown) => {
+  const row = resolveRow(item)
+  if (!row.id) return
+
+  await router.push({ name: 'tasks-edit', params: { id: row.id } })
 }
 
 const totalPages = computed(() => Math.max(1, meta.value.last_page))
@@ -201,9 +205,14 @@ onMounted(() => {
     <v-card rounded="xl" elevation="2">
       <v-card-title class="d-flex align-center justify-space-between flex-wrap ga-4">
         <span>Tasks</span>
-        <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="fetchTasks">
-          Refresh
-        </v-btn>
+        <div class="d-flex ga-2">
+          <v-btn color="primary" prepend-icon="mdi-plus" @click="goToCreate">
+            Create task
+          </v-btn>
+          <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="fetchTasks">
+            Refresh
+          </v-btn>
+        </div>
       </v-card-title>
 
       <v-card-text>
@@ -261,18 +270,18 @@ onMounted(() => {
           </template>
 
           <template #item.status="{ item }">
-            <v-chip size="small" :color="getStatusColor(getRowStatus(item))" variant="tonal">
-              {{ getStatusLabel(getRowStatus(item)) }}
+            <v-chip size="small" :color="getTaskStatusColor(getRowStatus(item))" variant="tonal">
+              {{ getTaskStatusLabel(getRowStatus(item)) }}
             </v-chip>
           </template>
 
           <template #item.due_date="{ item }">
-            {{ formatDate(getRowDueDate(item)) }}
+            {{ formatTaskDate(getRowDueDate(item)) }}
           </template>
 
           <template #item.actions="{ item }">
             <div class="d-flex ga-2">
-              <v-btn size="small" variant="text" color="primary" icon="mdi-pencil" :title="`Edit ${getRowTitle(item)}`" />
+              <v-btn size="small" variant="text" color="primary" icon="mdi-pencil" :title="`Edit ${getRowTitle(item)}`" @click="goToEdit(item)" />
               <v-btn size="small" variant="text" color="error" icon="mdi-delete" :title="`Delete ${getRowTitle(item)}`" />
             </div>
           </template>

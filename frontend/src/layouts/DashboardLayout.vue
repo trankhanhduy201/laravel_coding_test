@@ -8,7 +8,12 @@ const drawer = ref(true)
 const route = useRoute()
 const router = useRouter()
 
-const title = computed(() => (route.name === 'tasks' ? 'Task Dashboard' : 'Workspace'))
+const title = computed(() => {
+  if (route.name === 'tasks') return 'Task Dashboard'
+  if (route.name === 'tasks-create') return 'Create Task'
+  if (route.name === 'tasks-edit') return 'Edit Task'
+  return 'Workspace'
+})
 
 const handleLogout = async () => {
   logout()

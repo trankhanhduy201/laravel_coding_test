@@ -19,6 +19,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/tasks/create',
+    name: 'tasks-create',
+    component: () => import('../views/TaskCreateView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/tasks/:id/edit',
+    name: 'tasks-edit',
+    component: () => import('../views/TaskEditView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/login',
   },
