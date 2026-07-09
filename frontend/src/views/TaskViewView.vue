@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
-import { ApiError } from '../api/client'
+import { COMMON_ERROR_MESSAGES, resolveApiErrorMessage } from '../api/errorMessages'
 import { authState } from '../services/authService'
 import { isAdminRole } from '../features/auth/userRoleHelpers'
 import {
@@ -63,23 +63,15 @@ const loadTask = async () => {
     task.value = response
 
     if (!canViewTask.value) {
-      errorMessage.value = 'You do not have permission to view this task'
+      errorMessage.value = COMMON_ERROR_MESSAGES.FORBIDDEN
       task.value = null
     }
   }
   catch (error: unknown) {
-    if (error instanceof ApiError && error.status === 401) {
-      errorMessage.value = 'Your session has expired. Please sign in again.'
-    }
-    else if (error instanceof ApiError && error.status === 403) {
-      errorMessage.value = 'You do not have permission to view this task'
-    }
-    else if (error instanceof ApiError && error.status === 404) {
-      errorMessage.value = 'Task not found'
-    }
-    else {
-      errorMessage.value = error instanceof Error ? error.message : 'Unexpected error while loading task'
-    }
+    errorMessage.value = resolveApiErrorMessage(error, {
+      defaultMessage: 'Unexpected error while loading task',
+    })
+
     task.value = null
   }
   finally {
@@ -89,12 +81,6 @@ const loadTask = async () => {
 
 const goBack = async () => {
   await router.push({ name: 'tasks' })
-}
-
-const goToEdit = async () => {
-  if (task.value && canEditTask.value) {
-    await router.push({ name: 'tasks-edit', params: { id: task.value.id } })
-  }
 }
 
 onMounted(() => {

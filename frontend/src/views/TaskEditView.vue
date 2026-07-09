@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 import TaskDeleteButton from '../components/TaskDeleteButton.vue'
 import UserAutocomplete from '../components/UserAutocomplete.vue'
-import { ApiError } from '../api/client'
+import { resolveApiErrorMessage } from '../api/errorMessages'
 import { fetchTask, updateTask, type TaskPayload, type TaskStatus, type TaskUser } from '../services/taskService'
 import { taskStatusOptions, toApiDateTime, toDateTimeLocalInput } from '../features/tasks/taskHelpers'
 
@@ -47,7 +47,9 @@ const loadTask = async () => {
     form.due_date = toDateTimeLocalInput(task.due_date)
   }
   catch (error) {
-    errorMessage.value = error instanceof ApiError ? error.message : 'Cannot load task.'
+    errorMessage.value = resolveApiErrorMessage(error, {
+      defaultMessage: 'Cannot load task.',
+    })
   }
   finally {
     loadingTask.value = false
@@ -78,7 +80,9 @@ const submit = async () => {
     await router.push({ name: 'tasks' })
   }
   catch (error) {
-    errorMessage.value = error instanceof ApiError ? error.message : 'Cannot update task.'
+    errorMessage.value = resolveApiErrorMessage(error, {
+      defaultMessage: 'Cannot update task.',
+    })
   }
   finally {
     loading.value = false

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ApiError } from '../api/client'
+import { resolveApiErrorMessage } from '../api/errorMessages'
 import { signIn } from '../services/authService'
 
 const router = useRouter()
@@ -33,12 +33,9 @@ const submit = async () => {
       await router.push({ name: 'tasks' })
     }
     catch (error) {
-      if (error instanceof ApiError) {
-        errorMessage.value = error.message
-      }
-      else {
-        errorMessage.value = 'Unable to sign in. Please try again.'
-      }
+      errorMessage.value = resolveApiErrorMessage(error, {
+        defaultMessage: 'Unable to sign in. Please try again.',
+      })
     }
     finally {
       loading.value = false

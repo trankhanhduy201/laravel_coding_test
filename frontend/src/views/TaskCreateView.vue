@@ -3,7 +3,7 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 import UserAutocomplete from '../components/UserAutocomplete.vue'
-import { ApiError } from '../api/client'
+import { resolveApiErrorMessage } from '../api/errorMessages'
 import { createTask, type TaskPayload, type TaskStatus, type TaskUser } from '../services/taskService'
 import { taskStatusOptions, toApiDateTime } from '../features/tasks/taskHelpers'
 
@@ -51,7 +51,9 @@ const submit = async () => {
     await router.push({ name: 'tasks' })
   }
   catch (error) {
-    errorMessage.value = error instanceof ApiError ? error.message : 'Cannot create task.'
+    errorMessage.value = resolveApiErrorMessage(error, {
+      defaultMessage: 'Cannot create task.',
+    })
   }
   finally {
     loading.value = false

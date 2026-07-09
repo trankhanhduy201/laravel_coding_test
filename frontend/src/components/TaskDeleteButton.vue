@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ApiError } from '../api/client'
+import { resolveApiErrorMessage } from '../api/errorMessages'
 import { deleteTask } from '../services/taskService'
 
 const props = withDefaults(defineProps<{
@@ -54,7 +54,9 @@ const confirmDelete = async () => {
     emit('deleted', props.taskId)
   }
   catch (error) {
-    errorMessage.value = error instanceof ApiError ? error.message : 'Cannot delete task.'
+    errorMessage.value = resolveApiErrorMessage(error, {
+      defaultMessage: 'Cannot delete task.',
+    })
   }
   finally {
     loading.value = false

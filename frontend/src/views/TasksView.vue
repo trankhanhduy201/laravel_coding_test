@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 import TaskDeleteButton from '../components/TaskDeleteButton.vue'
 import UserAutocomplete from '../components/UserAutocomplete.vue'
-import { ApiError } from '../api/client'
+import { resolveApiErrorMessage } from '../api/errorMessages'
 import { authState } from '../services/authService'
 import { isAdminRole } from '../features/auth/userRoleHelpers'
 import {
@@ -232,12 +232,10 @@ const fetchTasks = async () => {
     itemsPerPage.value = response.meta.per_page
   }
   catch (error: unknown) {
-    if (error instanceof ApiError && error.status === 401) {
-      errorMessage.value = 'Your session has expired. Please sign in again.'
-    }
-    else {
-      errorMessage.value = error instanceof Error ? error.message : 'Unexpected error while fetching tasks'
-    }
+    errorMessage.value = resolveApiErrorMessage(error, {
+      defaultMessage: 'Unexpected error while fetching tasks',
+    })
+
     tasks.value = []
     meta.value = {
       current_page: 1,
