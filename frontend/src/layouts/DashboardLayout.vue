@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useRoute } from 'vue-router'
+import { logout } from '../services/authService'
 
 const drawer = ref(true)
 const route = useRoute()
+const router = useRouter()
 
 const title = computed(() => (route.name === 'tasks' ? 'Task Dashboard' : 'Workspace'))
+
+const handleLogout = async () => {
+  logout()
+  await router.push({ name: 'login' })
+}
 </script>
 
 <template>
@@ -38,7 +46,7 @@ const title = computed(() => (route.name === 'tasks' ? 'Task Dashboard' : 'Works
     <v-app-bar-nav-icon @click="drawer = !drawer" />
     <v-toolbar-title>{{ title }}</v-toolbar-title>
     <v-spacer />
-    <v-btn variant="text" prepend-icon="mdi-logout" to="/login">Logout</v-btn>
+    <v-btn variant="text" prepend-icon="mdi-logout" @click="handleLogout">Logout</v-btn>
   </v-app-bar>
 
   <v-main>

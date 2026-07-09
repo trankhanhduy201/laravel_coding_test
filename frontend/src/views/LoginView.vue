@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ApiError } from '../api/client'
+import { signIn } from '../services/authService'
 
 const router = useRouter()
 const form = ref<HTMLFormElement | null>(null)
+const loading = ref(false)
+const errorMessage = ref('')
 
 const credentials = reactive({
   email: '',
@@ -21,7 +25,24 @@ const submit = async () => {
   const result = await form.value?.validate()
 
   if (result?.valid) {
-    await router.push('/tasks')
+    loading.value = true
+    errorMessage.value = ''
+
+    try {
+      await signIn({ ...credentials })
+      await router.push({ name: 'tasks' })
+    }
+    catch (error) {
+      if (error instanceof ApiError) {
+        errorMessage.value = error.message
+      }
+      else {
+        errorMessage.value = 'Unable to sign in. Please try again.'
+      }
+    }
+    finally {
+      loading.value = false
+    }
   }
 }
 </script>
@@ -42,11 +63,20 @@ const submit = async () => {
               </div>
             </div>
 
-            <v-form ref="form" @submit.prevent="submit">
+            <v-form ref="form" :disabled="loading" @submit.prevent="submit">
+              <v-alert
+                v-if="errorMessage"
+                type="error"
+                variant="tonal"
+                class="mb-4"
+                :text="errorMessage"
+              />
+
               <v-text-field
                 v-model="credentials.email"
                 label="Email"
                 type="email"
+                :disabled="loading"
                 prepend-inner-icon="mdi-email-outline"
                 :rules="[rules.required, rules.email]"
                 variant="outlined"
@@ -57,6 +87,7 @@ const submit = async () => {
                 v-model="credentials.password"
                 label="Password"
                 type="password"
+                :disabled="loading"
                 prepend-inner-icon="mdi-lock-outline"
                 :rules="[rules.required]"
                 variant="outlined"
@@ -68,9 +99,10 @@ const submit = async () => {
                 block
                 size="large"
                 color="primary"
-                :disabled="!canSubmit"
+                :loading="loading"
+                :disabled="!canSubmit || loading"
               >
-                Enter demo workspace
+                Sign in
               </v-btn>
             </v-form>
           </v-card-text>

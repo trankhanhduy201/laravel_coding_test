@@ -1,18 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
+import { ApiError } from '../api/client'
+import { fetchTasks as loadTasks, type Task, type TaskStatus } from '../services/taskService'
 
-type TaskStatus = 'todo' | 'in_progress' | 'done'
-
-type ApiTask = {
-  id: number
-  title: string
-  status: TaskStatus
-  assigned_to: number | null
-  due_date: string | null
-}
-
-const allTasks = ref<ApiTask[]>([])
+const allTasks = ref<Task[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
 
@@ -36,9 +28,6 @@ const headers = [
   { title: 'Due date', key: 'due_date' },
   { title: 'Actions', key: 'actions', sortable: false },
 ]
-
-const runtimeApiBase = (globalThis as { __VITE_API_BASE_URL?: string }).__VITE_API_BASE_URL
-const baseApiUrl = (runtimeApiBase || 'http://localhost:14080/api').replace(/\/$/, '')
 
 const getStatusLabel = (status: TaskStatus) => {
   if (status === 'in_progress') return 'In progress'
@@ -97,68 +86,20 @@ watch(totalPages, (newTotal) => {
   }
 })
 
-const extractTasks = (payload: unknown): ApiTask[] => {
-  if (!payload || typeof payload !== 'object') return []
-
-  const root = payload as { data?: unknown }
-
-  if (Array.isArray(root.data)) {
-    return root.data as ApiTask[]
-  }
-
-  if (root.data && typeof root.data === 'object') {
-    const nested = root.data as { data?: unknown }
-    if (Array.isArray(nested.data)) {
-      return nested.data as ApiTask[]
-    }
-  }
-
-  return []
-}
-
 const fetchTasks = async () => {
   loading.value = true
   errorMessage.value = ''
 
   try {
-    const token = localStorage.getItem('token')
-    const headers: Record<string, string> = { Accept: 'application/json' }
-
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
-
-    const endpointCandidates = [
-      `${baseApiUrl}/tasks`,
-      `${baseApiUrl}/v1/tasks`,
-      `${baseApiUrl.replace(/\/api$/, '')}/api/v1/tasks`,
-    ]
-
-    let lastStatus = 0
-    let payload: unknown = null
-
-    for (const endpoint of endpointCandidates) {
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers,
-      })
-
-      lastStatus = response.status
-
-      if (response.ok) {
-        payload = (await response.json()) as unknown
-        break
-      }
-    }
-
-    if (!payload) {
-      throw new Error(`Failed to fetch tasks (${lastStatus || 'network error'})`)
-    }
-
-    allTasks.value = extractTasks(payload)
+    allTasks.value = await loadTasks()
   }
   catch (error: unknown) {
-    errorMessage.value = error instanceof Error ? error.message : 'Unexpected error while fetching tasks'
+    if (error instanceof ApiError && error.status === 401) {
+      errorMessage.value = 'Your session has expired. Please sign in again.'
+    }
+    else {
+      errorMessage.value = error instanceof Error ? error.message : 'Unexpected error while fetching tasks'
+    }
     allTasks.value = []
   }
   finally {

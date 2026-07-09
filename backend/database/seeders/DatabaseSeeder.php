@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRoleEnum;
 use App\Models\User;
+use Database\Factories\UserFactory;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -13,11 +15,26 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        User::query()->updateOrCreate(
+            ['email' => 'superuser@example.com'],
+            array_merge(
+                User::factory()->superuser()->make()->getAttributes(),
+                [
+                    'email_verified_at' => now(),
+                    'password' => UserFactory::DEMO_PASSWORD,
+                ]
+            )
+        );
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        User::query()->updateOrCreate(
+            ['email' => 'user@example.com'],
+            array_merge(
+                User::factory()->normalUser()->make()->getAttributes(),
+                [
+                    'email_verified_at' => now(),
+                    'password' => UserFactory::DEMO_PASSWORD,
+                ]
+            )
+        );
     }
 }
