@@ -7,6 +7,7 @@ export const HTTP_STATUS = {
 } as const
 
 export const COMMON_ERROR_MESSAGES = {
+  DEFAULT: 'An unexpected error occurred. Please try again later.',
   SESSION_EXPIRED: 'Your session has expired. Please sign in again.',
   FORBIDDEN: 'You do not have permission to perform this action.',
   NOT_FOUND: 'Not found',
@@ -39,11 +40,11 @@ export const resolveApiErrorMessage = (
       return statusMessage
     }
 
-    return error.message || options.defaultMessage
+    return options.defaultMessage || COMMON_ERROR_MESSAGES.DEFAULT
   }
 
   if (error instanceof Error && error.message) {
-    return error.message
+    return COMMON_ERROR_MESSAGES.DEFAULT
   }
 
   return options.defaultMessage
