@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\TaskStatusEnum;
+use App\Enums\UserRoleEnum;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -21,10 +22,17 @@ class TaskFactory extends Factory
      */
     public function definition(): array
     {
-        $authorId = User::query()->inRandomOrder()->value('id')
-            ?? User::factory()->create()->id;
+        $randomNonAdminUserId = static function (): ?int {
+            return User::query()
+                ->where('role', '!=', UserRoleEnum::Admin)
+                ->inRandomOrder()
+                ->value('id');
+        };
 
-        $assigneeId = User::query()->inRandomOrder()->value('id')
+        $authorId = $randomNonAdminUserId()
+            ?? User::factory()->normalUser()->create()->id;
+
+        $assigneeId = $randomNonAdminUserId()
             ?? $authorId;
 
         return [
