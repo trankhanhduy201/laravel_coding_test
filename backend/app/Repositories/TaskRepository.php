@@ -3,13 +3,13 @@
 namespace App\Repositories;
 
 use App\Models\Task;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class TaskRepository extends AbstractRepository
 {
     protected string $modelClass = Task::class;
 
-    public function getAllWithFilters(array $filters = []): Collection
+    public function getPaginatedWithFilters(array $filters = [], int $page = 1, int $limit = 15): LengthAwarePaginator
     {
         $query = $this->model;
 
@@ -25,7 +25,7 @@ class TaskRepository extends AbstractRepository
             $query = $query->where('user_id', $filters['user_id']);
         }
 
-        return $query->get();
+        return $query->paginate($limit, ['*'], 'page', $page);
     }
 
     public function all()

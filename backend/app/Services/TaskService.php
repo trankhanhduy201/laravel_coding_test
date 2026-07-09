@@ -3,16 +3,19 @@
 namespace App\Services;
 
 use App\Repositories\TaskRepository;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class TaskService
 {
     public function __construct(private TaskRepository $taskRepository) {}
 
-    public function getAllTasks(array $queryParams = []): Collection
+    public function getPaginatedTasks(array $queryParams = []): LengthAwarePaginator
     {
         $filters = $this->prepareFilters($queryParams);
-        return $this->taskRepository->getAllWithFilters($filters);
+        $page = (int) ($queryParams['page'] ?? config('pagination.default_page'));
+        $limit = (int) ($queryParams['limit'] ?? config('pagination.default_limit'));
+        
+        return $this->taskRepository->getPaginatedWithFilters($filters, $page, $limit);
     }
 
     private function prepareFilters(array $queryParams): array

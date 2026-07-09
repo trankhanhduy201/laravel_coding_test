@@ -29,7 +29,7 @@ class TaskController extends ApiController
 
     public function index(Request $request): JsonResponse
     {
-        $tasks = $this->taskService->getAllTasks($request->query());
+        $tasks = $this->taskService->getPaginatedTasks($request->query());
 
         return ApiResponse::success(
             'Tasks retrieved successfully',
