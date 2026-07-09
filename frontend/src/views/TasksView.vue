@@ -6,6 +6,7 @@ import TaskDeleteButton from '../components/TaskDeleteButton.vue'
 import UserAutocomplete from '../components/UserAutocomplete.vue'
 import { ApiError } from '../api/client'
 import { authState } from '../services/authService'
+import { isAdminRole } from '../features/auth/userRoleHelpers'
 import {
   fetchTasks as loadTasks,
   type Task,
@@ -137,7 +138,7 @@ const canViewTask = (item: unknown): boolean => {
   if (!currentUser) return false
 
   // Admin can view all tasks
-  if (currentUser.role === 'admin') return true
+  if (isAdminRole(currentUser.role)) return true
 
   // Author can view their own tasks
   if (task.author?.id === currentUser.id) return true
@@ -155,7 +156,7 @@ const canEditTask = (item: unknown): boolean => {
   if (!currentUser) return false
 
   // Admin can edit all tasks
-  if (currentUser.role === 'admin') return true
+  if (isAdminRole(currentUser.role)) return true
 
   // Author can edit their own tasks
   if (task.author?.id === currentUser.id) return true
@@ -170,7 +171,7 @@ const canDeleteTask = (item: unknown): boolean => {
   if (!currentUser) return false
 
   // Admin can delete all tasks
-  if (currentUser.role === 'admin') return true
+  if (isAdminRole(currentUser.role)) return true
 
   // Author can delete their own tasks
   if (task.author?.id === currentUser.id) return true

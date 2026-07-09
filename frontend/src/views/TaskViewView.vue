@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 import { ApiError } from '../api/client'
 import { authState } from '../services/authService'
+import { isAdminRole } from '../features/auth/userRoleHelpers'
 import {
   fetchTask,
   type Task,
@@ -25,7 +26,7 @@ const canViewTask = computed(() => {
   if (!task.value || !authState.user) return false
 
   // Admin can view all
-  if (authState.user.role === 'admin') return true
+  if (isAdminRole(authState.user.role)) return true
 
   // Author can view
   if (task.value.author?.id === authState.user.id) return true
@@ -40,7 +41,7 @@ const canEditTask = computed(() => {
   if (!task.value || !authState.user) return false
 
   // Admin can edit all
-  if (authState.user.role === 'admin') return true
+  if (isAdminRole(authState.user.role)) return true
 
   // Author can edit
   if (task.value.author?.id === authState.user.id) return true
