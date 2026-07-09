@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Enums\UserRoleEnum;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -24,9 +25,12 @@ class UserRepository extends AbstractRepository
         return $this->model
             ->newQuery()
             ->select(['id', 'name'])
+            ->whereNot('role', UserRoleEnum::Admin)
             ->when($keyword !== '', function ($query) use ($keyword) {
-                $query->where('name', 'like', '%'.$keyword.'%')
-                    ->orWhere('email', 'like', '%'.$keyword.'%');
+                $query->where(function ($query) use ($keyword) {
+                    $query->where('name', 'like', "%{$keyword}%")
+                        ->orWhere('email', 'like', "%{$keyword}%");
+                });
             })
             ->orderBy('name')
             ->limit($resolvedLimit)
