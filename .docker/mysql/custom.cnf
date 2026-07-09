@@ -1,0 +1,4 @@
+[mysqld]
+sql_mode=""
+innodb_buffer_pool_size=2G
+innodb_ft_enable_stopword=OFF

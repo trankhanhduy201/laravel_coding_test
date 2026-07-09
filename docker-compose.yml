@@ -1,0 +1,39 @@
+version: "3.7"
+
+services:
+  web:
+    container_name: "web"
+    build:
+      context: .
+      target: "local"
+    ports:
+      - "14080:80"
+    volumes:
+      - .:/var/www/
+      - ./.docker/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+      - ./.docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./.docker/php/8.3/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/zzz-www.conf
+      - ./.docker/php/8.3/php.ini:/usr/local/etc/php/conf.d/my-app.ini
+    links:
+      - db
+      - redis
+  db:
+    image: mysql:8.0
+    container_name: "db"
+    ports:
+      - "15326:3306"
+    volumes:
+      - ./.docker/mysql/custom.cnf:/etc/mysql/conf.d/custom.cnf
+      - ./.docker/mysql/charset.cnf:/etc/mysql/conf.d/charset.cnf
+      - ./.db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=pass
+      - MYSQL_DATABASE=database
+  redis:
+    image: redis
+    container_name: "redis"
+    ports:
+      - "18379:6379"
+volumes:
+  redis-data:
+    driver: local
