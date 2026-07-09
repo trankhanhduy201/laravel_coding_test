@@ -10,6 +10,8 @@ Short setup and run guide for the backend (Laravel API) and frontend (Vue 3 SPA)
 
 1. From project root, start all services:
    - `docker compose up -d --build`
+2. Run the backend setup script inside the API container:
+   - `docker exec -it api sh -lc "sh /var/www/.docker/setup.sh"`
 2. Run DB migrations + seed demo data:
    - `docker exec -it api sh -lc "cd /var/www/backend && php artisan migrate --seed"`
 
