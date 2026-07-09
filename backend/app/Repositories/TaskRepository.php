@@ -35,6 +35,10 @@ class TaskRepository extends AbstractRepository
             $query = $query->where('tasks.user_id', $filters['user_id']);
         }
 
+        if (isset($filters['title'])) {
+            $query = $query->where('tasks.title', 'like', '%' . $filters['title'] . '%');
+        }
+
         $query = $query->orderByDesc('tasks.created_at');
 
         return $query->paginate($limit, ['*'], 'page', $page);

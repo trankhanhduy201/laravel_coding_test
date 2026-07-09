@@ -9,11 +9,15 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   clearable?: boolean
   emptyLabel?: string
+  density?: 'default' | 'comfortable' | 'compact'
+  hideDetails?: boolean | 'auto'
 }>(), {
   label: 'User',
   disabled: false,
   clearable: true,
   emptyLabel: 'No users found',
+  density: 'default',
+  hideDetails: false,
 })
 
 const emit = defineEmits<{
@@ -122,5 +126,7 @@ onMounted(() => {
     :no-data-text="search ? emptyLabel : 'Type to search users'"
     prepend-inner-icon="mdi-account-search-outline"
     variant="outlined"
+    :density="density"
+    :hide-details="hideDetails"
   />
 </template>

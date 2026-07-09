@@ -32,6 +32,9 @@ const router = useRouter()
 
 const selectedStatus = ref<'all' | TaskStatus>('all')
 const assignedToFilter = ref<TaskUser | null>(null)
+const titleFilter = ref('')
+const debouncedTitleFilter = ref('')
+let titleFilterDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -203,7 +206,17 @@ const handleTaskDeleted = async () => {
 
 const totalPages = computed(() => Math.max(1, meta.value.last_page))
 
-watch([selectedStatus, assignedToFilter, itemsPerPage], () => {
+watch(titleFilter, (value) => {
+  if (titleFilterDebounceTimer) {
+    clearTimeout(titleFilterDebounceTimer)
+  }
+
+  titleFilterDebounceTimer = setTimeout(() => {
+    debouncedTitleFilter.value = value.trim()
+  }, 350)
+})
+
+watch([selectedStatus, assignedToFilter, debouncedTitleFilter, itemsPerPage], () => {
   page.value = 1
   void fetchTasks()
 })
@@ -222,6 +235,7 @@ const fetchTasks = async () => {
       limit: itemsPerPage.value,
       status: selectedStatus.value === 'all' ? undefined : selectedStatus.value,
       assigned_to: assignedToFilter.value?.id,
+      title: debouncedTitleFilter.value || undefined,
     }
 
     const response = await loadTasks(filters)
@@ -252,6 +266,7 @@ const fetchTasks = async () => {
 onMounted(() => {
   fetchTasks()
 })
+
 </script>
 
 <template>
@@ -270,15 +285,28 @@ onMounted(() => {
       </v-card-title>
 
       <v-card-text>
-        <v-row class="mb-2">
-          <v-col cols="12" md="7">
-            <UserAutocomplete
-              v-model="assignedToFilter"
-              label="Filter by assignee"
+        <v-row class="mb-2" align="center">
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="titleFilter"
+              label="Search by title"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              density="comfortable"
+              hide-details
               clearable
             />
           </v-col>
-          <v-col cols="12" md="5">
+          <v-col cols="12" md="4">
+            <UserAutocomplete
+              v-model="assignedToFilter"
+              label="Filter by assignee"
+              density="comfortable"
+              hide-details="auto"
+              clearable
+            />
+          </v-col>
+          <v-col cols="12" md="4">
             <v-select
               v-model="selectedStatus"
               :items="statusOptions"

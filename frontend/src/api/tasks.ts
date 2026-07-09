@@ -45,6 +45,7 @@ export type TaskListFilters = {
   limit?: number
   status?: TaskStatus
   assigned_to?: number
+  title?: string
 }
 
 const defaultTaskListMeta: TaskListMeta = {

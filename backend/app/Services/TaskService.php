@@ -30,6 +30,11 @@ class TaskService
             $filters['assigned_to'] = $queryParams['assigned_to'];
         }
 
+        $title = trim((string) ($queryParams['title'] ?? ''));
+        if ($title !== '') {
+            $filters['title'] = $title;
+        }
+
         return $filters;
     }
 }
