@@ -38,7 +38,6 @@ class TaskController extends ApiController
     public function store(StoreTaskRequest $request): JsonResponse
     {
         $task = $this->taskRepository->create($request->validated());
-        $task->loadMissing(['author:id,name', 'assignee:id,name']);
 
         return ApiResponse::success(
             'Task created successfully',
@@ -61,7 +60,6 @@ class TaskController extends ApiController
     public function update(UpdateTaskRequest $request, Task $task): JsonResponse
     {
         $task->update($request->validated());
-        $task = $task->fresh()->loadMissing(['author:id,name', 'assignee:id,name']);
 
         return ApiResponse::success(
             'Task updated successfully',
